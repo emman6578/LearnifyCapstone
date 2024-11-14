@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
 
 export const siteConfig: Metadata = {
-  title: "Lingo",
+  title: "Learnify",
   description:
-    "Interactive platform for language learning with lessons, quizzes, and progress tracking.",
+    "Interactive platform for learning with lessons, quizzes, and progress tracking.",
   keywords: [
     "reactjs",
     "nextjs",
     "vercel",
     "react",
-    "duolingo-clone",
+    "learnifyPlatform",
     "learn-language",
     "shadcn",
     "shadcn-ui",
     "radix-ui",
     "cn",
     "clsx",
-    "lingo",
+    "learnify",
     "postgresql",
     "sonner",
     "drizzle",
@@ -39,12 +39,4 @@ export const siteConfig: Metadata = {
     "html",
     "css",
   ] as Array<string>,
-  authors: {
-    name: "Sanidhya Kumar Verma",
-    url: "https://github.com/sanidhyy",
-  },
-} as const;
-
-export const links = {
-  sourceCode: "https://github.com/sanidhyy/duolingo-clone",
 } as const;

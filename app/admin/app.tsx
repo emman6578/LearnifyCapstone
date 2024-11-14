@@ -12,6 +12,9 @@ import { ChallengeOptionsList } from "./challengeOption/list";
 import { CourseCreate } from "./course/create";
 import { CourseEdit } from "./course/edit";
 import { CourseList } from "./course/list";
+import { InstructionalMaterialsCreate } from "./instructionalMaterials/create";
+import { InstructionalMaterialsEdit } from "./instructionalMaterials/edit";
+import { InstructionalMaterialsList } from "./instructionalMaterials/list";
 import { LessonCreate } from "./lesson/create";
 import { LessonEdit } from "./lesson/edit";
 import { LessonList } from "./lesson/list";
@@ -64,6 +67,17 @@ const App = () => {
         edit={ChallengeOptionEdit}
         options={{
           label: "Challenge Options",
+        }}
+      />
+
+      <Resource
+        name="instructionalMaterials"
+        recordRepresentation="text"
+        list={InstructionalMaterialsList}
+        create={InstructionalMaterialsCreate}
+        edit={InstructionalMaterialsEdit}
+        options={{
+          label: "Instructional Materials",
         }}
       />
     </Admin>

@@ -1,4 +1,5 @@
 import {
+  BooleanInput,
   Create,
   NumberInput,
   ReferenceInput,
@@ -13,6 +14,11 @@ export const ChallengeCreate = () => {
     <Create>
       <SimpleForm>
         <TextInput source="question" validate={[required()]} label="Question" />
+        <TextInput
+          source="instructions"
+          validate={[required()]}
+          label="Instructions"
+        />
         <SelectInput
           source="type"
           validate={[required()]}
@@ -25,10 +31,18 @@ export const ChallengeCreate = () => {
               id: "ASSIST",
               name: "ASSIST",
             },
+            {
+              id: "UNDERLINED",
+              name: "UNDERLINED",
+            },
           ]}
         />
         <ReferenceInput source="lessonId" reference="lessons" />
         <NumberInput source="order" validate={required()} label="Order" />
+        <BooleanInput
+          source="hasInstructionalMaterials"
+          label="has Instructional Materials"
+        />
       </SimpleForm>
     </Create>
   );

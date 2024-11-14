@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,8 +10,14 @@ import { toast } from "sonner";
 
 import { upsertChallengeProgress } from "@/actions/challenge-progress";
 import { reduceHearts } from "@/actions/user-progress";
+import { Button } from "@/components/ui/button";
 import { MAX_HEARTS } from "@/constants";
-import { challengeOptions, challenges, userSubscription } from "@/db/schema";
+import {
+  challengeOptions,
+  challenges,
+  instructionalMaterials,
+  userSubscription,
+} from "@/db/schema";
 import { useHeartsModal } from "@/store/use-hearts-modal";
 import { usePracticeModal } from "@/store/use-practice-modal";
 
@@ -28,6 +34,7 @@ type QuizProps = {
   initialLessonChallenges: (typeof challenges.$inferSelect & {
     completed: boolean;
     challengeOptions: (typeof challengeOptions.$inferSelect)[];
+    instructionalMaterials: (typeof instructionalMaterials.$inferSelect)[];
   })[];
   userSubscription:
     | (typeof userSubscription.$inferSelect & {
@@ -54,12 +61,10 @@ export const Quiz = ({
     autoPlay: true,
   });
   const { width, height } = useWindowSize();
-
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const { open: openHeartsModal } = useHeartsModal();
   const { open: openPracticeModal } = usePracticeModal();
-
   useMount(() => {
     if (initialPercentage === 100) openPracticeModal();
   });
@@ -78,11 +83,51 @@ export const Quiz = ({
     return uncompletedIndex === -1 ? 0 : uncompletedIndex;
   });
 
-  const [selectedOption, setSelectedOption] = useState<number>();
-  const [status, setStatus] = useState<"none" | "wrong" | "correct">("none");
+  // const [selectedOption, setSelectedOption] = useState<number>();
+  const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
 
+  const [status, setStatus] = useState<"none" | "wrong" | "correct">("none");
   const challenge = challenges[activeIndex];
   const options = challenge?.challengeOptions ?? [];
+
+  const [userInput1, setUserInput1] = useState<string>("");
+  const [userInput2, setUserInput2] = useState<string>("");
+
+  const [hasLearningMaterial, setHasLearningMaterial] = useState(false);
+  const [disableButton, setDisableButton] = useState(false);
+
+  useEffect(() => {
+    if (challenge && challenge.hasInstructionalMaterials) {
+      setHasLearningMaterial(true);
+    }
+  }, [challenge]);
+
+  const checkUserInput = () => {
+    // Make sure both userInput fields are filled
+    if (!userInput1 || !userInput2) return;
+
+    // Normalize the inputs and options to lowercase for case-insensitive comparison
+    const normalizedUserInput1 = userInput1.trim().toLowerCase();
+    const normalizedUserInput2 = userInput2.trim().toLowerCase();
+
+    // Filter the challengeOptions that match the user inputs
+    const matchingOptions = challenge.challengeOptions.filter(
+      (option) =>
+        (option.text.trim().toLowerCase() === normalizedUserInput1 ||
+          option.text.trim().toLowerCase() === normalizedUserInput2) &&
+        option.correct
+    );
+
+    // If there are matching options, update the selectedOptions array with their IDs
+    if (matchingOptions.length > 0) {
+      const matchingIds = matchingOptions.map((option) => option.id);
+      setDisableButton(true);
+      setSelectedOptions(matchingIds); // Update the selectedOptions state
+    } else {
+      setDisableButton(true);
+      setSelectedOptions([45, 46]); // If no match, reset selectedOptions
+    }
+  };
 
   const onNext = () => {
     setActiveIndex((current) => current + 1);
@@ -91,33 +136,50 @@ export const Quiz = ({
   const onSelect = (id: number) => {
     if (status !== "none") return;
 
-    setSelectedOption(id);
+    // Toggle the selection
+    setSelectedOptions(
+      (prevSelected) =>
+        prevSelected.includes(id)
+          ? prevSelected.filter((optionId) => optionId !== id) // Deselect if already selected
+          : [...prevSelected, id] // Add to the array if not selected
+    );
   };
 
   const onContinue = () => {
-    if (!selectedOption) return;
+    if (selectedOptions.length === 0) return;
 
     if (status === "wrong") {
       setStatus("none");
-      setSelectedOption(undefined);
+      setSelectedOptions([]);
       return;
     }
 
     if (status === "correct") {
       onNext();
       setStatus("none");
-      setSelectedOption(undefined);
+      setSelectedOptions([]);
       return;
     }
 
-    const correctOption = options.find((option) => option.correct);
+    const correctOptions = options
+      .filter((option) => option.correct)
+      .map((option) => option.id);
 
-    if (!correctOption) return;
+    if (!correctOptions || correctOptions.length === 0) return;
 
-    if (correctOption.id === selectedOption) {
+    // Check if the selected options match the correct options
+    const isCorrect =
+      selectedOptions.length === correctOptions.length &&
+      selectedOptions.every((id) => correctOptions.includes(id));
+
+    if (isCorrect) {
       startTransition(() => {
         upsertChallengeProgress(challenge.id)
           .then((response) => {
+            setDisableButton(false);
+            setUserInput1("");
+            setUserInput2("");
+
             if (response?.error === "hearts") {
               openHeartsModal();
               return;
@@ -138,6 +200,10 @@ export const Quiz = ({
       startTransition(() => {
         reduceHearts(challenge.id)
           .then((response) => {
+            setDisableButton(false);
+            setUserInput1("");
+            setUserInput2("");
+
             if (response?.error === "hearts") {
               openHeartsModal();
               return;
@@ -203,6 +269,10 @@ export const Quiz = ({
     );
   }
 
+  const handleHasLearningMaterial = () => {
+    setHasLearningMaterial(false);
+  };
+
   const title =
     challenge.type === "ASSIST"
       ? "Select the correct meaning"
@@ -221,33 +291,123 @@ export const Quiz = ({
       <div className="flex-1">
         <div className="flex h-full items-center justify-center">
           <div className="flex w-full flex-col gap-y-12 px-6 lg:min-h-[350px] lg:w-[600px] lg:px-0">
-            <h1 className="text-center text-lg font-bold text-neutral-700 lg:text-start lg:text-3xl">
-              {title}
-            </h1>
+            {challenge.type === "ASSIST" && (
+              <QuestionBubble question={challenge.question} />
+            )}
 
-            <div>
-              {challenge.type === "ASSIST" && (
-                <QuestionBubble question={challenge.question} />
-              )}
+            {hasLearningMaterial ? (
+              <>
+                <div className="instructional-materials rounded-lg bg-gradient-to-br from-yellow-100 to-pink-100 p-4 shadow-lg">
+                  {challenge.instructionalMaterials.map((material) => (
+                    <div
+                      key={material.id}
+                      className="material-item mb-6 transform rounded-2xl border-4 border-blue-300 bg-white p-4 shadow-md transition duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
+                    >
+                      <h2 className="mb-3 text-2xl font-extrabold text-purple-700">
+                        {material.title}
+                      </h2>
+                      <p className="mb-4 text-lg font-semibold text-pink-600">
+                        {material.description}
+                      </p>
+                      <div
+                        className="content rounded-lg border border-purple-200 bg-purple-50 p-3 text-base leading-relaxed text-gray-800"
+                        dangerouslySetInnerHTML={{
+                          __html: material.content ?? "",
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex w-full flex-col gap-y-12 px-6 lg:min-h-[350px] lg:w-[600px] lg:px-0">
+                  <h1
+                    className="text-center text-lg font-bold text-neutral-700 lg:text-2xl"
+                    dangerouslySetInnerHTML={{
+                      __html: challenge.instructions ?? "",
+                    }}
+                  />
+                  <h1
+                    className="text-center text-lg font-bold text-neutral-700 lg:text-start lg:text-3xl"
+                    dangerouslySetInnerHTML={{
+                      __html: title ?? "",
+                    }}
+                  />
 
-              <Challenge
-                options={options}
-                onSelect={onSelect}
-                status={status}
-                selectedOption={selectedOption}
-                disabled={pending}
-                type={challenge.type}
-              />
-            </div>
+                  {challenge.type === "UNDERLINED" && (
+                    <div className="rounded-xl bg-gradient-to-br from-blue-50 to-green-100 p-6 shadow-lg">
+                      {status === "correct" ? (
+                        <>{status === "correct" && <h1>Very good!</h1>}</>
+                      ) : (
+                        <div className="flex flex-col gap-y-6">
+                          <input
+                            type="text"
+                            value={userInput1}
+                            onChange={(e) => setUserInput1(e.target.value)}
+                            placeholder="Type your first word..."
+                            className="rounded-xl border-2 border-blue-300 bg-white p-3 text-lg shadow-sm transition-all duration-300 focus:border-yellow-400 focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            value={userInput2}
+                            onChange={(e) => setUserInput2(e.target.value)}
+                            placeholder="Type your second word..."
+                            className="rounded-xl border-2 border-blue-300 bg-white p-3 text-lg shadow-sm transition-all duration-300 focus:border-yellow-400 focus:outline-none"
+                          />
+
+                          <div className="mb-10 flex justify-center">
+                            {disableButton ? (
+                              <></>
+                            ) : (
+                              <Button
+                                className="w-1/2"
+                                variant={"primary"}
+                                onClick={checkUserInput}
+                              >
+                                Submit to Check
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {challenge.type === "SELECT" && (
+                    <Challenge
+                      options={options}
+                      onSelect={onSelect}
+                      status={status}
+                      selectedOption={selectedOptions}
+                      disabled={pending}
+                      type={challenge.type}
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      <Footer
-        disabled={pending || !selectedOption}
-        status={status}
-        onCheck={onContinue}
-      />
+      {hasLearningMaterial ? (
+        <div className="mb-10 flex justify-center">
+          <Button
+            className="w-1/2"
+            variant={"primary"}
+            onClick={handleHasLearningMaterial}
+          >
+            Next
+          </Button>
+        </div>
+      ) : (
+        <Footer
+          disabled={pending || !selectedOptions}
+          status={status}
+          onCheck={onContinue}
+        />
+      )}
     </>
   );
 };

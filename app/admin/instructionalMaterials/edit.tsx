@@ -1,5 +1,4 @@
 import {
-  BooleanInput,
   Edit,
   ReferenceInput,
   SimpleForm,
@@ -7,13 +6,17 @@ import {
   required,
 } from "react-admin";
 
-export const ChallengeOptionEdit = () => {
+export const InstructionalMaterialsEdit = () => {
   return (
     <Edit>
       <SimpleForm>
-        <TextInput source="text" validate={[required()]} label="Text" />
-        <BooleanInput source="correct" label="Correct option" />
-
+        <TextInput source="title" validate={[required()]} label="title" />
+        <TextInput
+          source="description"
+          validate={[required()]}
+          label="description"
+        />
+        <TextInput source="content" validate={[required()]} label="content" />
         <ReferenceInput source="challengeId" reference="challenges" />
         <TextInput source="imageSrc" label="Image URL" />
         <TextInput source="audioSrc" label="Audio URL" />

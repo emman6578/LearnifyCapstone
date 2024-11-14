@@ -1,5 +1,4 @@
 import {
-  BooleanField,
   Datagrid,
   List,
   NumberField,
@@ -7,14 +6,14 @@ import {
   TextField,
 } from "react-admin";
 
-export const ChallengeOptionsList = () => {
+export const InstructionalMaterialsList = () => {
   return (
     <List>
       <Datagrid rowClick="edit">
         <NumberField source="id" />
-        <TextField source="text" />
-        <BooleanField source="correct" />
-
+        <TextField source="title" />
+        <TextField source="description" />
+        <TextField source="content" />
         <ReferenceField source="challengeId" reference="challenges" />
         <TextField src="imageSrc" />
         <TextField src="audioSrc" />

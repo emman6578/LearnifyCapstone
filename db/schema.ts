@@ -61,7 +61,12 @@ export const lessonsRelations = relations(lessons, ({ one, many }) => ({
   challenges: many(challenges),
 }));
 
-export const challengesEnum = pgEnum("type", ["SELECT", "ASSIST"]);
+export const challengesEnum = pgEnum("type", [
+  "SELECT",
+  "ASSIST",
+  "UNDERLINED",
+  "INSTRUCTIONS",
+]);
 
 export const challenges = pgTable("challenges", {
   id: serial("id").primaryKey(),
@@ -73,6 +78,10 @@ export const challenges = pgTable("challenges", {
   type: challengesEnum("type").notNull(),
   question: text("question").notNull(),
   order: integer("order").notNull(),
+  instructions: text("instructions"),
+  hasInstructionalMaterials: boolean("has_instructional_materials").default(
+    false
+  ),
 });
 
 export const challengesRelations = relations(challenges, ({ one, many }) => ({
@@ -82,6 +91,7 @@ export const challengesRelations = relations(challenges, ({ one, many }) => ({
   }),
   challengeOptions: many(challengeOptions),
   challengeProgress: many(challengeProgress),
+  instructionalMaterials: many(instructionalMaterials),
 }));
 
 export const challengeOptions = pgTable("challenge_options", {
@@ -106,6 +116,32 @@ export const challengeOptionsRelations = relations(
     }),
   })
 );
+
+//=========REMOVE IF ERROR==============================================
+export const instructionalMaterials = pgTable("underlined_options", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id")
+    .references(() => challenges.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
+  title: text("title"),
+  description: text("description"),
+  content: text("content"),
+  imageSrc: text("image_src"),
+  audioSrc: text("audio_src"),
+});
+
+export const instructionalMaterialsRelations = relations(
+  instructionalMaterials,
+  ({ one }) => ({
+    challenge: one(challenges, {
+      fields: [instructionalMaterials.challengeId],
+      references: [challenges.id],
+    }),
+  })
+);
+//=========REMOVE IF ERROR==============================================
 
 export const challengeProgress = pgTable("challenge_progress", {
   id: serial("id").primaryKey(),
