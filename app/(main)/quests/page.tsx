@@ -35,17 +35,19 @@ const QuestsPage = async () => {
       </StickyWrapper>
 
       <FeedWrapper>
-        <div className="flex w-full flex-col items-center">
+        <div className="flex w-full flex-col items-center ">
           <Image src="/quests.svg" alt="Quests" height={90} width={90} />
 
           <h1 className="my-6 text-center text-2xl font-bold text-neutral-800">
             Quests
           </h1>
-          <p className="mb-6 text-center text-lg text-muted-foreground">
+          <p className="mb-6 text-center text-lg text-muted-foreground ">
             Complete quests by earning points.
           </p>
 
-          <ul className="w-full">
+          <div className="mb-10" />
+
+          <ul className="w-full rounded-lg bg-green-300">
             {QUESTS.map((quest) => {
               const progress = (userProgress.points / quest.value) * 100;
 

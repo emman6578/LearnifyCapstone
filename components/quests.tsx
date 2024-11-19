@@ -9,7 +9,7 @@ type QuestsProps = { points: number };
 
 export const Quests = ({ points }: QuestsProps) => {
   return (
-    <div className="space-y-4 rounded-xl border-2 p-4">
+    <div className="space-y-4 rounded-xl border-2 bg-white p-4">
       <div className="flex w-full items-center justify-between space-y-2">
         <h3 className="text-lg font-bold">Quests</h3>
 
